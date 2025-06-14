@@ -1,30 +1,70 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   main.c                                             :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: aybouatr <marvin@42.fr>                    +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/04/13 11:25:11 by aybouatr          #+#    #+#             */
-/*   Updated: 2025/04/13 11:25:37 by aybouatr         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #include "philo.h"
 
-//-------> start parsing <-------------
-pthread_mutex_t lock;
 
-int ft_isdigit(char c)
+int	ft_usleep(size_t milliseconds)
+{
+	size_t	start;
+
+	start = get_current_time();
+	while ((get_current_time() - start) < milliseconds)
+		usleep(500);
+	return (0);
+}
+
+// Gets the current time in milliseconds
+
+size_t	get_current_time(void)
+{
+	struct timeval	time;
+
+	if (gettimeofday(&time, NULL) == -1)
+		write(2, "gettimeofday() error\n", 22);
+	return (time.tv_sec * 1000 + time.tv_usec / 1000);
+}
+
+// ---------------- start parsing -----------------
+
+int ft_digit(char c)
 {
     if (c >= '0' && c <= '9')
         return (1);
     return (0);
 }
 
-int	ft_atoi(const char *str)
+int ft_is_all_digit(char* str)
 {
-	long	res;
+    int i;
+    // int check_1;
+    // int check_2;
+
+    i = 0;
+    while (str[i])
+    {
+        if (!ft_digit(str[i]) && (!((str[i] >= 9 && str[i] <= 13) || str[i] == ' ')))
+            return (1);
+        
+        i++;
+    }
+    return (0);
+}
+
+int ft_is_correct_nbr(char** av)
+{
+    int i;
+
+    i = 1;
+    while (av[i])
+    {
+        if (ft_is_all_digit(av[i]))
+            return (1);
+        i++;
+    }
+    return (0);
+}
+
+unsigned long ft_atoi(char* str)
+{
+   unsigned long	res;
 	size_t	i;
 	int		sgn;
 
@@ -39,441 +79,370 @@ int	ft_atoi(const char *str)
 		i++;
 	}
 	res = 0;
-	while (str[i] && ft_isdigit(str[i]))
+	while (str[i] && ft_digit(str[i]))
 	{
 		res = res * 10 + (str[i] - '0');
 		i++;
 	}
-	return ((int )res * sgn);
+	return (res * sgn);
 }
 
-int len_arr(char** arr)
+int ft_check_range_between(char* str,size_t max,size_t min)
+{
+   if (ft_atoi(str) > max || min > ft_atoi(str))
+        return (1);
+    return (0);
+}
+
+int ft_is_correc_range(char** av)
+{
+    int e;
+
+    e = 1;
+    while (av[e])
+    {
+        if (ft_check_range_between(av[e],SIZE_MAX,1))
+            return (1);
+        e++;
+    }
+    if (ft_check_range_between(av[1],MAX_PHILO,1))
+            return (1);
+    return (0);
+}
+
+int ft_parsing(char** av)
+{
+    if (ft_is_correct_nbr(av) || ft_is_correc_range(av))
+        return (1);
+    return (0);
+}
+
+// ---------------- end parsing -------------------
+
+// [number_of_philosophers] [time_to_die] [time_to_eat] [time_to_sleep]
+// [number_of_times_each_philosopher_must_eat]
+
+// --------------- init variable ------------------
+
+void init_meta(t_meta_data* data,t_philo* philoo,char** av)
+{
+    pthread_mutex_init(&data->lock_print,NULL);
+    pthread_mutex_init(&data->lock_dead,NULL);
+    pthread_mutex_init(&data->lock_meal,NULL);
+    data->nbr_eating = 0;
+    data->some_one_dead = 0;
+    data->philo_s = philoo;
+    data->time_to_eat = ft_atoi(av[3]);
+    data->time_to_sleep= ft_atoi(av[4]);
+    data->time_to_die = ft_atoi(av[2]);
+    data->num_philo = ft_atoi(av[1]);
+    if (av[5] != NULL)
+        data->nbr_of_eat = ft_atoi(av[5]);
+    else
+        data->nbr_of_eat = -1;
+}
+
+void init_forks(pthread_mutex_t *forks,size_t num_philo)
 {
     int i;
 
     i = 0;
-    while (arr[i])
+    while (i < num_philo)
+    {
+        pthread_mutex_init(&forks[i],NULL);
         i++;
-    return (i);
+    }
 }
 
-t_arg_data inisilise_struct(char** av)
+void init_philo_s(t_philo* philo_s,t_meta_data* meta_data,pthread_mutex_t* forks)
 {
-    int len;
-    t_arg_data data;
+    int j;
 
-    len = len_arr(av);
-    data.nbr_philo = ft_atoi(av[1]);
-    data.time_die = ft_atoi(av[2]);
-    data.time_eat = ft_atoi(av[3]);
-    data.time_sleep = ft_atoi(av[4]);
-    if (len == 6)
-        data.nbr_of_time_eat_for_philo = ft_atoi(av[5]);
-    else
-        data.nbr_of_time_eat_for_philo = -1;
-    return (data);
-}
- 
-size_t get_current_time()
-{
-    struct timeval time;
- 
-    if (gettimeofday(&time, NULL) == -1)
-        write(2, "gettimeofday() error\n", 22);
-    return (time.tv_sec * 1000 + time.tv_usec / 1000);
-}
- 
-void ft_usleep(size_t milisecound)
-{
-    size_t start;
- 
-    start = get_current_time();
-    while ((get_current_time() - start) < milisecound)
-        usleep(500);
-    return;
+    j = 0;
+    while (j < meta_data->num_philo)
+    {
+        meta_data->philo_s[j].id = j + 1;
+        meta_data->philo_s[j].last_meal = get_current_time();
+        meta_data->philo_s[j].start_time = get_current_time();
+        meta_data->philo_s[j].nbr_eating = 0;
+        meta_data->philo_s[j].eating = 0;
+        meta_data->philo_s[j].some_one_dead = &meta_data->some_one_dead;
+        meta_data->philo_s[j].time_to_die = meta_data->time_to_die;
+        meta_data->philo_s[j].time_eat = meta_data->time_to_eat;
+        meta_data->philo_s[j].time_sleep = meta_data->time_to_sleep;
+        meta_data->philo_s[j].lock_print = &meta_data->lock_print;
+        meta_data->philo_s[j].lock_dead = &meta_data->lock_dead;
+        meta_data->philo_s[j].lock_meal= &meta_data->lock_meal;
+        meta_data->philo_s[j].num_philo = meta_data->num_philo;
+        meta_data->philo_s[j].nbr_of_eat = meta_data->nbr_of_eat;
+        meta_data->philo_s[j].lock_fork_l = &forks[j];
+        if (j == 0)
+            meta_data->philo_s[j].lock_fork_r = &forks[meta_data->num_philo - 1];
+        else
+           meta_data->philo_s[j].lock_fork_r = &forks[j - 1];
+        j++;
+    }
     
 }
-// ------------------ list ----------
 
-t_list	*ft_lstlast(t_list *lst)
+// ---------------- end init var ------------------
+
+// ---------------- start requrement  -------------------
+
+// void *minotoring_all_threads(void* philo_s)
+// {
+
+// }
+
+int	ft_strlen(char *str)
 {
-	if (!lst)
-		return (NULL);
-	while (lst -> next)
-		lst = lst -> next;
-    lst->previous = NULL;
-    lst->next = NULL;
-	return (lst);
+	int	i;
+
+	if (str == NULL)
+		return (0);
+	i = 0;
+	while (str[i] != '\0')
+		i++;
+	return (i);
 }
 
-void ft_lstadd_back(t_list **lst, t_list *new)
+int is_live(t_philo* philo)
 {
-    t_list *current;
-
-    if (!lst || !new)
-        return ;
-    current = *lst;
-    if (!current)
-    {
-        new->previous = new;
-        new->next = new;
-        *lst = new;
-        return ;
-    }
-    while (current->next != *lst)
-        current = current->next;
-    current->next = new;
-    new->previous = current;
-    new->next = *lst;
-    (*lst)->previous = new;
+    pthread_mutex_lock(philo->lock_dead);
+    if (*philo->some_one_dead == 1)
+        return (pthread_mutex_unlock(philo->lock_dead),1);
+    pthread_mutex_unlock(philo->lock_dead);
+    return (0);
 }
 
-t_list	*ft_lstnew(void *content)
+void printf_message(char* str,t_philo* philo)
 {
-	t_list	*head;
+    size_t time;
 
-	head = (t_list *)malloc(sizeof(t_list));
-	head -> content = content;
-	head -> next = NULL;
-    head -> previous = NULL;
-	return (head);
+    pthread_mutex_lock(philo->lock_print);
+    time = get_current_time() - philo->start_time;
+    if (!is_live(philo))
+       printf("%zu %d %s\n", time, philo->id, str);
+    pthread_mutex_unlock(philo->lock_print);
 }
 
-void	ft_lstclear(t_list **lst)
+void eat_l(t_philo* philo)
 {
-	t_list	*temp;
-	t_list	*help;
-    t_list  *last;
+    pthread_mutex_lock(philo->lock_fork_l);
+	printf_message("has taken a fork", philo);
+    // if (philo->num_philo == 1)
+	// {
+	// 	ft_usleep(philo->time_to_die);
+	// 	pthread_mutex_unlock(philo->lock_fork_r);
+	// 	return ;
+	// }
+	pthread_mutex_lock(philo->lock_fork_r);
+	printf_message("has taken a fork", philo);
+	philo->eating = 1;
+	printf_message("is eating", philo);
+	pthread_mutex_lock(philo->lock_meal);
+	philo->last_meal = get_current_time();
+	philo->nbr_eating++;
+	pthread_mutex_unlock(philo->lock_meal);
+	ft_usleep(philo->time_eat);
+	philo->eating = 0;
+    
+	pthread_mutex_unlock(philo->lock_fork_r);
+	pthread_mutex_unlock(philo->lock_fork_l);
+}
 
-	if ((!lst))
-		return ;
-	help = *lst;
-    last = help->previous;
-	while (help != last)
+void eat(t_philo* philo)
+{
+    pthread_mutex_lock(philo->lock_fork_r);
+	printf_message("has taken a fork", philo);
+    if (philo->num_philo == 1)
 	{
-		temp = help;
-		help = help->next;
-		free(temp->content);
-		free(temp);
+		ft_usleep(philo->time_to_die);
+		pthread_mutex_unlock(philo->lock_fork_r);
+		return ;
 	}
-    free(last->content);
-    free(last);
-	*lst = NULL;
+	pthread_mutex_lock(philo->lock_fork_l);
+	printf_message("has taken a fork", philo);
+	philo->eating = 1;
+	printf_message("is eating", philo);
+	pthread_mutex_lock(philo->lock_meal);
+	philo->last_meal = get_current_time();
+	philo->nbr_eating++;
+	pthread_mutex_unlock(philo->lock_meal);
+	ft_usleep(philo->time_eat);
+	philo->eating = 0;
+    
+	pthread_mutex_unlock(philo->lock_fork_l);
+	pthread_mutex_unlock(philo->lock_fork_r);
 }
 
-// ------------------end list---------------
-
-// --------------- build garbge collector -----------------------
-
-void gc_save_clean_memory(void *ptr,t_option option)
+void sleeping(t_philo* philo)
 {
-    static t_list* save_add;
-
-    if(option == save)
-        ft_lstadd_back(&save_add,ft_lstnew(ptr));
-    else if (option == clean)
-        ft_lstclear(&save_add);
-}
-void clean_memory(t_list* lst,int nb)
-{
-   ft_lstclear(&lst);
-   exit(nb);
+    printf_message("is sleeping", philo);
+	ft_usleep(philo->time_sleep);
 }
 
-//----------------- end grbg collrctor --------------------
-
-t_into_philo *inisilise_struct_for_philo(int id,t_arg_data info)
+void *minotor(void* info)
 {
-    t_into_philo *philo;
+    t_philo* philo;
 
-    philo = (t_into_philo *)malloc(sizeof(t_into_philo));
-    if (philo == NULL)
-        return (NULL);
-    philo->id_philo = id;
-    philo->status = thinking;
-    pthread_mutex_init(&philo->fork_philo, NULL);
-    philo->last_meal = 0;
-    philo->time_die = info.time_die;
-    philo->time_sleep = info.time_sleep;
-    philo->time_thinking = info.time_thinking;
-    philo->time_eat = info.time_eat;
+    philo = (t_philo* )info;
+    if (philo->id % 2 == 0)
+            ft_usleep(1);
+    while (!is_live(philo))
+    {
+        // if (philo->id % 2 == 1)
+        //     eat_r(philo);
+        // else
+        //     eat_l(philo);
+        eat(philo);
+        sleeping(philo);
+        printf_message("is thinking",philo);
+    }
     return (philo);
 }
 
-void destroy_all_mutex(t_list *lst_philo)
-{
-    t_into_philo *philo;
-    t_list *temp;
-
-    if (!lst_philo)
-        return ;
-    temp = lst_philo;
-    while (temp != lst_philo->previous)
-    {
-        philo = (t_into_philo *)temp->content;
-        pthread_mutex_destroy(&philo->fork_philo);
-        temp = temp->next;
-    }
-    pthread_mutex_destroy(philo->lock);
-    free(philo->lock);
-}
-
-void print_message(size_t time,t_into_philo** ph, const char *message)
-{
-
-    t_into_philo *philo;
-    
-    philo = *ph;
-    printf("%lu\n",philo->id_philo);
-    pthread_mutex_lock(philo->lock);
-    *ph = philo;
-    printf("%lu %lu %s\n", time, philo->id_philo, message);
-    pthread_mutex_unlock(philo->lock);
-    *ph = philo;
-}
-
-void check_is_late(t_into_philo *philo,t_list* lst, unsigned long time2)
-{
-    if ((get_current_time() - time2) > philo->time_die)
-    {
-        print_message(get_current_time() - time2, &philo, "is dead");
-        destroy_all_mutex(lst);
-        clean_memory(lst, -1);
-    }
-}
-
-// void case_odd(t_list* lst,t_into_philo *current_philo, t_into_philo *next, size_t time, unsigned long *time2)
-// {
-
-//     pthread_mutex_lock(&current_philo->fork_philo);
-//     print_message(get_current_time() - time, current_philo, "has taken fork");
-//     pthread_mutex_lock(&next->fork_philo);
-
-//     print_message(get_current_time() - time, current_philo, "has taken fork");
-        
-//     check_is_late(current_philo, lst,*time2);
-//     print_message(get_current_time() - time, current_philo, "is eating");
-           
-//     print_message(get_current_time() - *time2, current_philo, "check time");
-
-//     *time2 = get_current_time();
-//     pthread_mutex_unlock(&next->fork_philo);
-//     pthread_mutex_unlock(&current_philo->fork_philo);
-
-// }
-// void case_even(t_list* lst,t_into_philo *current_philo, t_into_philo *next, size_t time, unsigned long *time2)
-// {
-//     pthread_mutex_lock(&next->fork_philo);
-
-//     print_message(get_current_time() - time, current_philo, "has taken fork");
-
-//     pthread_mutex_lock(&current_philo->fork_philo);
-
-
-//     check_is_late(current_philo,lst, *time2);
-           
-//     *time2 = get_current_time();
-//     print_message(get_current_time() - time, current_philo, "has taken fork");
-//     print_message(get_current_time() - time, current_philo, "is eating");
-//     ft_usleep(current_philo->time_eat);
-//     pthread_mutex_unlock(&current_philo->fork_philo);
-//     pthread_mutex_unlock(&next->fork_philo);
-// }
-
-void *routine_philo(void *lst)
-{
-    t_into_philo *current_philo;
-    t_into_philo *next;
-    t_list       *lst_philo;
-    size_t       time;
-    unsigned long time2;
-    int i;
-
-    lst_philo = (t_list *)lst;
-    current_philo = (t_into_philo *)lst_philo->content;
-    next = (t_into_philo *)lst_philo->next->content;
-    time = get_current_time();
-    time2 = get_current_time();
-    i = 0;
-    while (1)
-    {
-        if (current_philo->id_philo % 2 == 0)
-        {
-            //case_even(lst,current_philo, next, time, &time2); 
-
-            pthread_mutex_lock(&next->fork_philo);
-
-            print_message(get_current_time() - time, &current_philo, "has taken fork");
-
-            pthread_mutex_lock(&current_philo->fork_philo);
-            check_is_late(current_philo,lst, time2);
-
-            time2 = get_current_time();
-           
-            print_message(get_current_time() - time, &current_philo, "has taken fork");
-            print_message(get_current_time() - time, &current_philo, "is eating");
-          //  ft_usleep(1000 * current_philo->time_eat);
-            pthread_mutex_unlock(&current_philo->fork_philo);
-            pthread_mutex_unlock(&next->fork_philo);
-    
-        }
-        else 
-        {
-            //case_odd(lst_philo,current_philo, next, time, &time2);
-            pthread_mutex_lock(&current_philo->fork_philo);
-            print_message(get_current_time() - time, &current_philo, "has taken fork");
-            pthread_mutex_lock(&next->fork_philo);
-
-            print_message(get_current_time() - time, &current_philo, "has taken fork");
-        
-             check_is_late(current_philo, lst,time2);
-            print_message(get_current_time() - time, &current_philo, "is eating");
-           
-            time2 = get_current_time();
-
-            pthread_mutex_unlock(&next->fork_philo);
-            pthread_mutex_unlock(&current_philo->fork_philo);
-        }
-
-        ft_usleep(10 * current_philo->time_eat);
-
-        print_message(get_current_time() - time, &current_philo, "is sleeping");
-
-        ft_usleep(10 * current_philo->time_sleep);
-
-        print_message(get_current_time() - time, &current_philo, "is thinking");
-
-        ft_usleep(10);    
-        
-        i++;
-    }
-    return NULL;
-}
-
-
-void performent_philosopher(t_list* lst_philo)
+void free_all(char* str,t_meta_data* meta_data,pthread_mutex_t* forks)
 {
     int i;
-    t_into_philo* philo;
-    t_into_philo* temp;
 
     i = 0;
-    philo = (t_into_philo* )lst_philo->previous->content;
-    while (philo && i < philo->id_philo)
+    if (str)
+	{
+		write(2, str, ft_strlen(str));
+		write(2, "\n", 1);
+	}
+    while (i < meta_data->num_philo)
     {
-        temp = (t_into_philo *)lst_philo->content;
-        if (pthread_create(&temp->threads,NULL,&routine_philo,(void *)lst_philo))
-        {
-            perror("faild creat thread \n");
-            exit(-1);
-        }
-        //ft_usleep(10);
-        temp = NULL;
-        lst_philo = lst_philo->next;
+        pthread_mutex_destroy(&forks[i]);
         i++;
     }
+    pthread_mutex_destroy(&meta_data->lock_dead);
+    pthread_mutex_destroy(&meta_data->lock_print);
+}
+
+int philo_is_late(t_philo* philo)
+{
+    pthread_mutex_lock(philo->lock_meal);
+	if (get_current_time() - philo->last_meal >= philo->time_to_die
+        && philo->eating == 0)
+		return (pthread_mutex_unlock(philo->lock_meal), 1);
+	pthread_mutex_unlock(philo->lock_meal);
+	return (0);
+}
+
+int is_all_live(t_philo* philo_s)
+{
+    int i;
+
     i = 0;
-    while (philo && i < philo->id_philo)
+    while (i < philo_s[0].num_philo)
     {
-        temp = (t_into_philo *)lst_philo->content;
-        pthread_join(temp->threads, NULL);
-        lst_philo = lst_philo->next;
-        i++;
-    }
-    
-    printf("all philosophers have finished their routine\n");
-}
-
-void error()
-{
-    printf("error in malloc\n");
-    exit(-1);
-}
-
-t_list*  init(char ** av)
-{
-    int i;
-    t_into_philo *philo;
-    t_list       *lst_philo;
-    pthread_mutex_t *lock;
-    t_arg_data data;
-    data = inisilise_struct(av);
-
-    lock = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
-    if (lock == NULL)
-        error();
-    pthread_mutex_init(lock, NULL);   
-    i = 1;
-    lst_philo = NULL;
-    while (i <= data.nbr_philo)
-    {
-        philo = inisilise_struct_for_philo(i,data);
-        if (philo == NULL)
-            clean_memory(lst_philo,-1);
-        philo->lock = lock;
-        ft_lstadd_back(&lst_philo,ft_lstnew((void *)philo));
-        philo = NULL;
-        i++;
-    }
-    return (lst_philo);
-}
-
-int parsig_arg(char** av)
-{
-    int i;
-    int index;
-
-    index = 1;
-    while (av && av[index])
-    {
-        i = 0;
-        while (av[index] && av[index][i] != '\0')
+        if (philo_is_late(&philo_s[i]))
         {
-            if (!ft_isdigit(av[index][i]))
-                return (-1);
-            i++;
-        }
-        index++;
+            printf_message("died",&philo_s[i]);
+            pthread_mutex_lock(philo_s[i].lock_dead);
+            *philo_s[i].some_one_dead = 1;
+            pthread_mutex_unlock(philo_s[i].lock_dead);
+            return (1);
+        }      
+        i++;
     }
     return (0);
+    
 }
 
-int ft_philo(char** av)
+int is_all_ate(t_philo* philos)
 {
-    t_list *lst_philo;
-    t_arg_data data_philos;
-
-    if (parsig_arg(av) == -1)
-        return (-1);
-    lst_philo = init(av);
-    performent_philosopher(lst_philo);
-    return (0);
+    int i;
+    size_t is_max_ate;
+    
+    i = 0;
+    is_max_ate = 0;
+    if (philos[0].nbr_of_eat == -1)
+        return (0);
+    while (i < philos[0].num_philo)
+	{
+		pthread_mutex_lock(philos[i].lock_meal);
+		if (philos[i].nbr_eating >= philos[i].nbr_of_eat)
+			is_max_ate++;
+		pthread_mutex_unlock(philos[i].lock_meal);
+		i++;
+	}
+	if (is_max_ate == philos[0].num_philo)
+	{
+		pthread_mutex_lock(philos[0].lock_dead);
+		*philos->some_one_dead = 1;
+		pthread_mutex_unlock(philos[0].lock_dead);
+		return (1);
+	}
+	return (0);
 }
 
-//-----------> end parsing <----------
-
-int main(int ac, char **av)
+void    *minotoring_all_threads(void* data)
 {
-    // int ac;
-    // char **av;
+    t_philo* philo_s;
 
-    // ac = 7;
-    // av = (char **)malloc(sizeof(char *) * ac);
-    // av[0] = "philo";
-    // av[1] = "2";
-    // av[2] = "80";
-    // av[3] = "20";
-    // av[4] = "20";
-    // av[5] = "7";
-    // av[6] = NULL;
-    if (ac < 6)
+    philo_s = (t_philo *)data;
+    while (1337)
     {
-        printf("you shouls argument like this : number_of_philosophers time_to_die time_to_eat ");
-        printf("time_to_sleep [number_of_times_each_philosopher_must_eat]");
+        if (is_all_live(philo_s) == 1 || is_all_ate(philo_s) == 1)
+            break;
     }
-    else if (ft_philo(av) == -1)
-    {
-        printf("fix argument !\n");
-    }
-    return 0;
+    return (data);
 }
+
+void manage_threads(t_meta_data* meta_data,pthread_mutex_t* forks)
+{
+    int i;
+    pthread_t threads;
+
+    i = 0;
+    if (pthread_create(&threads,NULL,&minotoring_all_threads,meta_data->philo_s) != 0)
+        free_all("faild creat thread ",meta_data,forks);
+    while (i < meta_data->philo_s[0].num_philo)
+    {
+        if (pthread_create(&meta_data->philo_s[i].threads,NULL,&minotor,&meta_data->philo_s[i]) != 0)
+            free_all("faild creat thread ",meta_data,forks);
+        i++;
+    }    
+    if (pthread_join(threads,NULL) != 0)
+        free_all("faild creat thread ",meta_data,forks);
+    i = 0;
+    while (i < meta_data->philo_s[0].num_philo)
+    {
+        if (pthread_join(meta_data->philo_s[i].threads,NULL) != 0)
+            free_all("faild creat thread ",meta_data,forks);
+        i++;
+    }
+}
+
+void performent_requement(char ** av)
+{
+    pthread_mutex_t forks[MAX_PHILO];
+    t_philo         philo_s[MAX_PHILO];
+    t_meta_data     meta;
+
+    init_meta(&meta,philo_s,av);
+    init_forks(forks,meta.num_philo);
+    init_philo_s(philo_s,&meta,forks);
+    manage_threads(&meta,forks);
+    free_all(NULL,&meta,forks);
+}
+
+// ---------------- end requrement  -------------------
+
+
+int main(int ac,char** av)
+{
+    if (ac == 6 || ac == 5)
+    {
+        if(ft_parsing(av))
+            printf("fix content argument \n");
+        else
+            performent_requement(av);
+    }
+    else
+        printf("fix argument \n");
+}
+
