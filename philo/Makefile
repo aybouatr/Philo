@@ -1,5 +1,5 @@
-CC = gcc
-CFLAGS = -Wall -Wextra -Werror -pthread
+CC = cc
+CFLAGS = -Wall -Wextra -Werror -fsanitize=thread -g3
 HDRS = philo.h
 
 NAME = philo

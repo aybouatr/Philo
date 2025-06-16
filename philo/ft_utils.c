@@ -12,12 +12,24 @@
 
 #include "philo.h"
 
-int	ft_digit(char c)
+void	eat_l(t_philo *philo)
 {
-	if (c >= '0' && c <= '9')
-		return (1);
-	return (0);
+	pthread_mutex_lock(philo->lock_fork_l);
+	printf_message("has taken a fork", philo);
+	pthread_mutex_lock(philo->lock_fork_r);
+	printf_message("has taken a fork", philo);
+	philo->eating = 1;
+	printf_message("is eating", philo);
+	pthread_mutex_lock(philo->lock_meal);
+	philo->last_meal = get_current_time();
+	philo->nbr_eating++;
+	pthread_mutex_unlock(philo->lock_meal);
+	ft_usleep(philo->time_eat, philo);
+	philo->eating = 0;
+	pthread_mutex_unlock(philo->lock_fork_l);
+	pthread_mutex_unlock(philo->lock_fork_r);
 }
+
 
 int	ft_atoi(char *str)
 {

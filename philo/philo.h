@@ -78,7 +78,6 @@ void				init_philo_s(t_meta_data *meta_data,
 int					ft_strlen(char *str);
 int					is_live(t_philo *philo);
 void				printf_message(char *str, t_philo *philo);
-void				eat(t_philo *philo);
 void				sleeping(t_philo *philo);
 void				*minotor(void *info);
 void				free_all(char *str, t_meta_data *meta_data,
@@ -90,5 +89,7 @@ void				*minotoring_all_threads(void *data);
 void				manage_threads(t_meta_data *meta_data,
 						pthread_mutex_t *forks);
 void				performent_requement(char **av);
+void				eat_l(t_philo *philo);
+void				eat_r(t_philo *philo);
 
 #endif

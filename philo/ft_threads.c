@@ -12,7 +12,7 @@
 
 #include "philo.h"
 
-void	eat(t_philo *philo)
+void	eat_r(t_philo *philo)
 {
 	pthread_mutex_lock(philo->lock_fork_r);
 	printf_message("has taken a fork", philo);
@@ -36,16 +36,19 @@ void	eat(t_philo *philo)
 	pthread_mutex_unlock(philo->lock_fork_r);
 }
 
+
+
 void	*minotor(void *info)
 {
 	t_philo	*philo;
 
 	philo = (t_philo *)info;
-	if (philo->id % 2 == 0)
-		ft_usleep(1, philo);
 	while (!is_live(philo))
 	{
-		eat(philo);
+		if (philo->id % 2 == 0)
+			eat_l(philo);
+		else
+			eat_r(philo);
 		sleeping(philo);
 		printf_message("is thinking", philo);
 	}
