@@ -14,15 +14,15 @@
 
 void	eat_r(t_philo *philo)
 {
-	pthread_mutex_lock(philo->lock_fork_r);
+	pthread_mutex_lock(philo->lock_fork_l);
 	printf_message("has taken a fork", philo);
 	if (philo->num_philo == 1)
 	{
 		ft_usleep(philo->time_to_die, philo);
-		pthread_mutex_unlock(philo->lock_fork_r);
+		pthread_mutex_unlock(philo->lock_fork_l);
 		return ;
 	}
-	pthread_mutex_lock(philo->lock_fork_l);
+	pthread_mutex_lock(philo->lock_fork_r);
 	printf_message("has taken a fork", philo);
 	philo->eating = 1;
 	printf_message("is eating", philo);
@@ -32,8 +32,8 @@ void	eat_r(t_philo *philo)
 	pthread_mutex_unlock(philo->lock_meal);
 	ft_usleep(philo->time_eat, philo);
 	philo->eating = 0;
-	pthread_mutex_unlock(philo->lock_fork_l);
 	pthread_mutex_unlock(philo->lock_fork_r);
+	pthread_mutex_unlock(philo->lock_fork_l);
 }
 
 
@@ -43,12 +43,15 @@ void	*minotor(void *info)
 	t_philo	*philo;
 
 	philo = (t_philo *)info;
+	
 	while (!is_live(philo))
 	{
+		// if (philo->id % 2 == 0)
+		// 	eat_l(philo);
+		// else
 		if (philo->id % 2 == 0)
-			eat_l(philo);
-		else
-			eat_r(philo);
+			ft_usleep(1,philo);
+		eat_r(philo);
 		sleeping(philo);
 		printf_message("is thinking", philo);
 	}
