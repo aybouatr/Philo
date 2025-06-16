@@ -18,7 +18,7 @@ void	eat(t_philo *philo)
 	printf_message("has taken a fork", philo);
 	if (philo->num_philo == 1)
 	{
-		ft_usleep(philo->time_to_die);
+		ft_usleep(philo->time_to_die, philo);
 		pthread_mutex_unlock(philo->lock_fork_r);
 		return ;
 	}
@@ -30,7 +30,7 @@ void	eat(t_philo *philo)
 	philo->last_meal = get_current_time();
 	philo->nbr_eating++;
 	pthread_mutex_unlock(philo->lock_meal);
-	ft_usleep(philo->time_eat);
+	ft_usleep(philo->time_eat, philo);
 	philo->eating = 0;
 	pthread_mutex_unlock(philo->lock_fork_l);
 	pthread_mutex_unlock(philo->lock_fork_r);
@@ -42,7 +42,7 @@ void	*minotor(void *info)
 
 	philo = (t_philo *)info;
 	if (philo->id % 2 == 0)
-		ft_usleep(1);
+		ft_usleep(1, philo);
 	while (!is_live(philo))
 	{
 		eat(philo);

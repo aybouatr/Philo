@@ -27,7 +27,7 @@ typedef struct s_philo
 {
 	int				time_eat;
 	pthread_t		threads;
-	int				time_sleep;
+	int				time_to_sleep;
 	short			eating;
 	short			id;
 	int				nbr_eating;
@@ -61,7 +61,7 @@ typedef struct s_meta_data
 }					t_meta_data;
 
 int					get_current_time(void);
-int					ft_usleep(int milliseconds);
+int					ft_usleep(int milliseconds, t_philo *philo);
 void				manage_threads(t_meta_data *meta_data,
 						pthread_mutex_t *forks);
 int					ft_digit(char c);

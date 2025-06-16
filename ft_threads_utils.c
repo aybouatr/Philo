@@ -45,8 +45,7 @@ void	free_all(char *str, t_meta_data *meta_data, pthread_mutex_t *forks)
 int	philo_is_late(t_philo *philo)
 {
 	pthread_mutex_lock(philo->lock_meal);
-	if (get_current_time() - philo->last_meal >= philo->time_to_die
-		&& philo->eating == 0)
+	if (get_current_time() - philo->last_meal >= philo->time_to_die)
 		return (pthread_mutex_unlock(philo->lock_meal), 1);
 	pthread_mutex_unlock(philo->lock_meal);
 	return (0);

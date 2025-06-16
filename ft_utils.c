@@ -59,14 +59,17 @@ int	ft_strlen(char *str)
 void	sleeping(t_philo *philo)
 {
 	printf_message("is sleeping", philo);
-	ft_usleep(philo->time_sleep);
+	ft_usleep(philo->time_to_sleep, philo);
 }
 
 int	is_live(t_philo *philo)
 {
 	pthread_mutex_lock(philo->lock_dead);
 	if (*philo->some_one_dead == 1)
-		return (pthread_mutex_unlock(philo->lock_dead), 1);
+	{
+		pthread_mutex_unlock(philo->lock_dead);
+		return (1);
+	}
 	pthread_mutex_unlock(philo->lock_dead);
 	return (0);
 }

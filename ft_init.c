@@ -58,7 +58,7 @@ void	init_philo_s(t_meta_data *meta,
 		meta->philo_s[j].some_one_dead = &meta->some_one_dead;
 		meta->philo_s[j].time_to_die = meta->time_to_die;
 		meta->philo_s[j].time_eat = meta->time_to_eat;
-		meta->philo_s[j].time_sleep = meta->time_to_sleep;
+		meta->philo_s[j].time_to_sleep = meta->time_to_sleep;
 		meta->philo_s[j].lock_print = &meta->lock_print;
 		meta->philo_s[j].lock_dead = &meta->lock_dead;
 		meta->philo_s[j].lock_meal = &meta->lock_meal;
@@ -72,13 +72,17 @@ void	init_philo_s(t_meta_data *meta,
 	}
 }
 
-int	ft_usleep(int milliseconds)
+int	ft_usleep(int milliseconds, t_philo *philo)
 {
 	int	start;
 
 	start = get_current_time();
 	while ((get_current_time() - start) < milliseconds)
+	{
+		if (is_live(philo))
+			break ;
 		usleep(500);
+	}
 	return (0);
 }
 
