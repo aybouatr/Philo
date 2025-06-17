@@ -89,7 +89,7 @@ void				*minotoring_all_threads(void *data);
 void				manage_threads(t_meta_data *meta_data,
 						pthread_mutex_t *forks);
 void				performent_requement(char **av);
-void				eat_l(t_philo *philo);
-void				eat_r(t_philo *philo);
+void				eat(t_philo *philo);
+void get_corect_fork(t_meta_data* meta, pthread_mutex_t *forks,int j);
 
 #endif
