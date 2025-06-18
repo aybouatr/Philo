@@ -12,7 +12,7 @@
 
 #include "philo.h"
 
-void get_corect_fork(t_meta_data* meta, pthread_mutex_t *forks,int j)
+void	get_corect_fork(t_meta_data *meta, pthread_mutex_t *forks, int j)
 {
 	if (j % 2 == 0)
 	{

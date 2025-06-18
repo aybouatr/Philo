@@ -64,7 +64,7 @@ void	init_philo_s(t_meta_data *meta,
 		meta->philo_s[j].lock_meal = &meta->lock_meal;
 		meta->philo_s[j].num_philo = meta->num_philo;
 		meta->philo_s[j].nbr_of_eat = meta->nbr_of_eat;
-		get_corect_fork(meta,forks,j);
+		get_corect_fork(meta, forks, j);
 	}
 }
 
