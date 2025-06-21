@@ -36,7 +36,7 @@ void	eat(t_philo *philo)
 	pthread_mutex_unlock(philo->lock_fork_l);
 }
 
-void	*minotor(void *info)
+void	*manage(void *info)
 {
 	t_philo	*philo;
 
@@ -77,7 +77,7 @@ void	manage_threads(t_meta_data *meta_data, pthread_mutex_t *forks)
 		free_all("faild creat thread ", meta_data, forks);
 	while (i < meta_data->philo_s[0].num_philo)
 	{
-		if (pthread_create(&meta_data->philo_s[i].threads, NULL, &minotor,
+		if (pthread_create(&meta_data->philo_s[i].threads, NULL, &manage,
 				&meta_data->philo_s[i]) != 0)
 			free_all("faild creat thread ", meta_data, forks);
 		i++;

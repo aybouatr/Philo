@@ -79,7 +79,7 @@ int					ft_strlen(char *str);
 int					is_live(t_philo *philo);
 void				printf_message(char *str, t_philo *philo);
 void				sleeping(t_philo *philo);
-void				*minotor(void *info);
+void				*manage(void *info);
 void				free_all(char *str, t_meta_data *meta_data,
 						pthread_mutex_t *forks);
 int					philo_is_late(t_philo *philo);
